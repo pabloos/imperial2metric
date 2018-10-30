@@ -1,13 +1,13 @@
 language: go
 
+go:
+  - "1.11.x"
+  - master
+
 sudo: required
 
 services: 
   - docker
-
-go:
-  - "1.11.x"
-  - master
 
 env:
   - GO111MODULE=on
@@ -15,5 +15,6 @@ env:
 install: true
 
 script:
-  - make
+  - go mod init
+  - GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o bin/imperial2metric.exe main.go 
   - go test -v ./...
