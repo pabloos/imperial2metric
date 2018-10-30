@@ -1,8 +1,19 @@
 laguage: go
 
+sudo: required
+
+services: 
+  - docker
+
+go:
+  - "1.11.x"
+  - master
+
 env:
   - GO111MODULE=on
 
-go:
-    - "1.11.x"
-    - master
+install: true
+
+script:
+  - make
+  - go test -v ./...
