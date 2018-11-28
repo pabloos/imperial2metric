@@ -17,12 +17,12 @@ build-lambda:
 	mkdir -p lambda-deploy
 	docker build --target lambda_builder -t lambda_builder .
 	docker run -it --rm --volume "$$PWD:/go/src/$(program)" lambda_builder
-	rm go.sum 
-	rm go.mod
+	yes | rm go.sum go.mod
 
 	# GOOS=linux go build -o handler cmd/lambda/*
 	# zip handler.zip handler
 	# rm handler
 
 test:
-	go test -v ./... -coverprofile=$(cvgfile) && go tool cover -func=$(cvgfile) && rm $(cvgfile)
+	docker build --target tester -t tester .
+	docker run -it --rm --volume "$$PWD:/go/src/$(program)" tester
