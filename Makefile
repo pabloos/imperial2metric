@@ -1,18 +1,25 @@
-.SILENT: build
+.SILENT: build-cli build-lambda
 
-program = imperial2metric
+### VARS
+program=imperial2metric
+cvgfile=coverage.out
 
-build:
+travis: build-cli build-lambda test
+
+#build the command line util
+build-cli:
 	mkdir -p bin
 	docker build -t builder .
-	docker run -it --rm --volume "$$PWD:/go/src/imperial2metric" builder
+	docker run -it --rm --volume "$$PWD:/go/src/$(program)" builder
+
+#build the lambda handler and zip
+build-lambda:
+	GOOS=linux go build -o handler cmd/lambda/*
+	zip handler.zip handler
+	rm handler
 
 clean:
-	rm -R bin
+	yes | rm -R bin
 
 test:
-	go test -v ./...
-
-lambda-ready:
-	GOOS=linux go build -o handler cmd/lambda/zipper.go
-	zip handler.zip handler
+	go test -v ./... -coverprofile=$(cvgfile) && go tool cover -func=$(cvgfile) && rm $(cvgfile)

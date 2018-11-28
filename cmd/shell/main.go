@@ -1,11 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	i2m "imperial2metric/pkg"
 	"log"
 	"os"
 	"path/filepath"
+)
+
+const (
+	resultsDir = "results"
 )
 
 func main() {
@@ -24,7 +29,7 @@ func main() {
 			log.Fatalf("readLines: %s", err)
 		}
 
-		lines := i2m.TransformFile(iofile, file)
+		metricfile := i2m.TransformFile(iofile)
 
 		path := filepath.Dir(file)
 
@@ -35,6 +40,11 @@ func main() {
 			fmt.Println(errMkdir)
 		}
 
-		writeOnFile(path, resultsDir, filepath.Base(file), lines)
+		buff := new(bytes.Buffer)
+		buff.ReadFrom(metricfile)
+
+		bytes := buff.Bytes()
+
+		i2m.WriteOnFile(path, resultsDir, filepath.Base(file), bytes)
 	}
 }

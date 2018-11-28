@@ -16,9 +16,3 @@ install: true
 
 notifications:
   email: false
-
-script:
-  - go mod init
-  - GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o bin/imperial2metric.exe main.go 
-  - go vet
-  - go test ./... -coverprofile=coverage.out && go tool cover -func=coverage.out

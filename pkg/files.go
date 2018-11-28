@@ -6,22 +6,19 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"strings"
 )
 
 const resultsDir = "results"
 
-func getFileContent(content []byte) (lines string) {
-	return string(content)
-}
-
-func writeOnFile(path, dirname, filename, content string) {
-	err := ioutil.WriteFile(path+"/"+dirname+"/"+filename, []byte(content), 0666)
+func WriteOnFile(path, dirname, filename string, bytes []byte) {
+	err := ioutil.WriteFile(path+"/"+dirname+"/"+filename, bytes, 0666)
 	if err != nil {
 		fmt.Println(err)
 	}
 }
 
-func TransformFile(input io.Reader, file string) string {
+func TransformFile(input io.Reader) io.Reader {
 
 	/*
 		we have a function that can write in source and target and another for write only in source
@@ -31,11 +28,6 @@ func TransformFile(input io.Reader, file string) string {
 		3) replace the new second source with the first one
 	*/
 
-	/* 	content, err := ioutil.ReadFile(file)
-	   	if err != nil {
-	   		log.Fatalf("readLines: %s", err)
-	   	} */
-
 	buff := new(bytes.Buffer)
 
 	_, err := buff.ReadFrom(input)
@@ -43,7 +35,7 @@ func TransformFile(input io.Reader, file string) string {
 		log.Fatalf("readLines: %s", err)
 	}
 
-	lines := getFileContent(buff.Bytes())
+	lines := string(buff.Bytes())
 
 	firstSource := getSource(sourceExp, lines)
 
@@ -57,5 +49,5 @@ func TransformFile(input io.Reader, file string) string {
 
 	lines = writeSource(firstSource, secondSource, lines)
 
-	return lines
+	return strings.NewReader(lines)
 }
