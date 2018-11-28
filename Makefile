@@ -19,7 +19,6 @@ build-lambda:
 	docker run -it --rm --volume "$$PWD:/go/src/$(program)" lambda_builder
 	rm go.sum 
 	rm go.mod
-	$(MAKE) clean
 
 	# GOOS=linux go build -o handler cmd/lambda/*
 	# zip handler.zip handler
