@@ -6,9 +6,6 @@ go:
 
 sudo: required
 
-services: 
-  - docker
-
 env:
   - GO111MODULE=on
 
@@ -21,6 +18,6 @@ script:
   - go mod init && \
     GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -o bin/imperial2metric.exe   cmd/shell/main.go && \
     GOOS=linux   GOARCH=amd64 CGO_ENABLED=0 go build -o bin/imperial2metric.linux cmd/shell/main.go && \
-    GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0 go build -o bin/imperial2metric.darwin cmd/shell/main.go && \
-    
+    GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0 go build -o bin/imperial2metric.darwin cmd/shell/main.go
+
   - go test ./... -coverprofile=coverage.out && go tool cover -func=coverage.out
