@@ -15,4 +15,4 @@ WORKDIR /go/src/imperial2metric/
 
 CMD export GO111MODULE=on && \
     go mod init && \
-    GOOS=linux   GOARCH=amd64 CGO_ENABLED=0 go build -o lambda-deploy/handler cmd/lambda/* && \
+    GOOS=linux   GOARCH=amd64 CGO_ENABLED=0 go build -o lambda-deploy/handler cmd/lambda/*
