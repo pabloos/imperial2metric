@@ -1,28 +1,35 @@
 .SILENT: build-cli build-lambda
 
-### VARS
+############
+### VARS ###
+############
 program=imperial2metric
-cvgfile=coverage.out
+docker=docker run -it --rm --volume "$$PWD:/go/src/$(program)" gopher /bin/bash -c
+lmbdir=lambda-deploy
 
+#this needs to be the first rule in the makefile because will be the one invoked by travis CI
 travis: build-cli build-lambda test
 
+builder:
+	docker build --target gopher -t gopher .
+
 #build the command line util
-build-cli:
+build-cli: builder
 	mkdir -p bin
-	docker build --target cli_builder -t cli_builder .
-	docker run -it --rm --volume "$$PWD:/go/src/$(program)" cli_builder
+	$(docker) ./x-compile.sh
 
 #build the lambda handler and zip
-build-lambda:
+build-lambda: builder
+	yes | rm -R lambda-deploy
 	mkdir -p lambda-deploy
-	docker build --target lambda_builder -t lambda_builder .
-	docker run -it --rm --volume "$$PWD:/go/src/$(program)" lambda_builder
-	yes | rm go.sum go.mod
+	$(docker) "GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -mod=vendor -race -o lambda-deploy/handler imperial2metric/cmd/lambda"
+	chmod 755 lambda-deploy/handler
 
-	# GOOS=linux go build -o handler cmd/lambda/*
-	# zip handler.zip handler
-	# rm handler
+deploy-lambda: build-lambda
+	cd $(lmbdir) && zip handler.zip handler && mv handler.zip ../
 
-test:
-	docker build --target tester -t tester .
-	docker run -it --rm --volume "$$PWD:/go/src/$(program)" tester
+test: builder
+	$(docker) "go test -v -mod=vendor -coverpkg=./... -coverprofile=coverage.out ./... && go tool cover -func=coverage.out && rm coverage.out"
+
+clean-vendor:
+	yes | rm -R vendor

@@ -101,7 +101,11 @@ func TestGetSource(t *testing.T) {
 
 	for _, test := range testTable {
 		t.Run(fmt.Sprintf("Test case %s", test.name), func(t *testing.T) {
-			result := getSource(sourceExp, test.source)
+			result, err := getSource(sourceExp, test.source)
+			if err != nil {
+				t.Errorf("Error on test %s: %v", test.name, err)
+			}
+
 			if result != test.expected {
 				t.Errorf("Test case: %s failed: expected %s, got %s", test.name, test.expected, result)
 			}

@@ -15,26 +15,21 @@ import (
 
 //S3Service manages all the operations of the s2 service
 type S3Service struct {
-	// sess       *session.Session
 	downloader *s3manager.Downloader
 	uploader   *s3manager.Uploader
 }
 
 // News3Service returns a new s3Service object
 func News3Service(sess *session.Session) *S3Service {
-	downloader := s3manager.NewDownloader(sess)
-	uploader := s3manager.NewUploader(sess)
-
 	return &S3Service{
-		// sess:       sess,
-		downloader: downloader,
-		uploader:   uploader,
+		downloader: s3manager.NewDownloader(sess),
+		uploader:   s3manager.NewUploader(sess),
 	}
 }
 
 // DownloadFile downloads a file as a byte array
 func (s3s *S3Service) DownloadFile(bucket, filename string) io.Reader {
-	buf := aws.NewWriteAtBuffer([]byte{})
+	buf := aws.NewWriteAtBuffer([]byte{}) // https://stackoverflow.com/questions/46019484/buffer-implementing-io-writerat-in-go
 
 	filename, err := url.QueryUnescape(filename)
 	if err != nil {
@@ -56,15 +51,20 @@ func (s3s *S3Service) DownloadFile(bucket, filename string) io.Reader {
 }
 
 // UploadFile uploads a file to the bucket and dir passed
-func (s3s *S3Service) UploadFile(bucket, dir string, file io.Reader) error {
-	// s3 api does not allow to use a Reader to pass to the body field directly
+func (s3s *S3Service) UploadFile(bucket, key string, file io.Reader) error {
+	// s3 API does not allow to use an io.Reader to pass to the body field directly. In fact it does but doesn't work --> 0 bytes file in the destiny
 	buffer := new(bytes.Buffer)
 	buffer.ReadFrom(file)
 
-	_, err := s3s.uploader.Upload(
+	key, err := url.QueryUnescape(key)
+	if err != nil {
+		return err
+	}
+
+	_, err = s3s.uploader.Upload(
 		&s3manager.UploadInput{
 			Bucket: aws.String(bucket),
-			Key:    aws.String(dir),
+			Key:    aws.String(key),
 			// ContentDisposition: aws.String("attachment"),
 			// ContentType:        aws.String(http.DetectContentType(buf.Bytes())),
 			Body: buffer,

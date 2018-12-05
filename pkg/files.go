@@ -2,14 +2,68 @@ package pkg
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
 const resultsDir = "results"
+
+func getSource(sourceExp string, lines string) (string, error) {
+	sourceRegexp, err := regexp.Compile(sourceExp)
+
+	if err != nil {
+		log.Fatalln("Cannot compile the regular expression of the source")
+		return "", err
+	}
+
+	if len(sourceRegexp.FindAllString(lines, 1)) < 1 {
+		return "", errors.New("seems to have not a <source> tag. Skipping his conversion")
+	} //si no hay source no hay nada que hacer, mejor largar
+
+	return sourceRegexp.FindAllString(lines, 1)[0], nil //we are getting the first match from the array
+}
+
+func getImperialMatches(imperialMatchRegex string, lines string) []string {
+	r, _ := regexp.Compile(imperialMatchRegex)
+
+	return r.FindAllString(lines, 3)
+}
+
+func writeSourceAndTarget(matches []string, numbers []float64, lines string) string {
+	for i, match := range matches {
+		r, _ := regexp.Compile(match)
+
+		// lines = r.ReplaceAllString(lines, fmt.Sprintf("%.1f", numbers[i])) //cambia source y target
+
+		lines = r.ReplaceAllString(lines, convert2Comma(numbers[i])) //cambia source y target
+	}
+
+	return lines
+}
+
+func getTheNumbers(matches []string, numberRegex string) []float64 {
+	rnumber, _ := regexp.Compile(numberRegex)
+
+	numbers := make([]float64, len(matches))
+
+	for i, match := range matches {
+		numbers[i], _ = strconv.ParseFloat(rnumber.FindString(match), 64) // https://stackoverflow.com/questions/18951359/how-to-format-floating-point-numbers-into-a-string-using-go?answertab=votes#tab-top
+	}
+
+	return getFloatingPoints(matches, numbers)
+}
+
+func writeSource(firstSource, secondSource, lines string) string {
+	regexpSource, _ := regexp.Compile(secondSource)
+
+	return regexpSource.ReplaceAllString(lines, firstSource)
+}
 
 func WriteOnFile(path, dirname, filename string, bytes []byte) {
 	err := ioutil.WriteFile(path+"/"+dirname+"/"+filename, bytes, 0666)
@@ -18,7 +72,7 @@ func WriteOnFile(path, dirname, filename string, bytes []byte) {
 	}
 }
 
-func TransformFile(input io.Reader) io.Reader {
+func TransformFile(input io.Reader) (io.Reader, error) {
 
 	/*
 		we have a function that can write in source and target and another for write only in source
@@ -35,9 +89,12 @@ func TransformFile(input io.Reader) io.Reader {
 		log.Fatalf("readLines: %s", err)
 	}
 
-	lines := string(buff.Bytes())
+	lines := string(buff.Bytes()) // [:] ?
 
-	firstSource := getSource(sourceExp, lines)
+	firstSource, err := getSource(sourceExp, lines)
+	if err != nil {
+		return strings.NewReader(lines), nil
+	}
 
 	matches := getImperialMatches(imperialMatchRegex, lines)
 
@@ -45,9 +102,12 @@ func TransformFile(input io.Reader) io.Reader {
 
 	lines = writeSourceAndTarget(matches, numbers, lines)
 
-	secondSource := getSource(sourceWithoutQuote, lines)
+	secondSource, err := getSource(sourceWithoutQuote, lines)
+	if err != nil {
+		return input, err
+	}
 
 	lines = writeSource(firstSource, secondSource, lines)
 
-	return strings.NewReader(lines)
+	return strings.NewReader(lines), nil
 }

@@ -29,7 +29,11 @@ func main() {
 			log.Fatalf("readLines: %s", err)
 		}
 
-		metricfile := i2m.TransformFile(iofile)
+		metricfile, err := i2m.TransformFile(iofile)
+		if err != nil {
+			fmt.Printf("Error transforming the file %s: %v", file, err)
+			continue
+		}
 
 		path := filepath.Dir(file)
 
