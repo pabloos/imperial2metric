@@ -20,9 +20,9 @@ build-cli: builder
 
 #build the lambda handler and zip
 build-lambda: builder
-	yes | rm -R lambda-deploy
+	yes | rm -R lambda-deploy || true
 	mkdir -p lambda-deploy
-	$(docker) "GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -mod=vendor -race -o lambda-deploy/handler imperial2metric/cmd/lambda"
+	$(docker) "go mod vendor && GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -mod=vendor -race -o lambda-deploy/handler imperial2metric/cmd/lambda"
 	chmod 755 lambda-deploy/handler
 
 deploy-lambda: build-lambda
