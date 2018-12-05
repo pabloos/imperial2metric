@@ -1,6 +1,11 @@
 result/
 bin/
+lambda-deploy
 
 handler.zip
 
-.gitignore
+vendor
+
+.idea
+
+.DS_Store
