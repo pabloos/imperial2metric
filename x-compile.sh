@@ -1,7 +1,17 @@
+#!/bin/bash
 
 PROGRAM_NAME=${PWD##*/} 
 
+OSs=( windows linux darwin )
+
+declare -A extensions=(
+    [windows]=.exe
+    [linux]=.linux
+    [darwin]=.osx
+)
+
 go mod vendor
-GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -mod=vendor -o bin/$PROGRAM_NAME.exe cmd/shell/main.go && \
-GOOS=linux   GOARCH=amd64 CGO_ENABLED=0 go build -mod=vendor -o bin/$PROGRAM_NAME.linux cmd/shell/main.go && \
-GOOS=darwin  GOARCH=amd64 CGO_ENABLED=0 go build -mod=vendor -o bin/$PROGRAM_NAME.darwin cmd/shell/main.go;
+
+for os in "${OSs[@]}" ; do
+    GOOS=$os GOARCH=amd64 CGO_ENABLED=0 go build -mod=vendor -o bin/$PROGRAM_NAME${extensions[$os]} cmd/shell/main.go
+done
