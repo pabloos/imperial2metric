@@ -18,13 +18,12 @@ func getSource(sourceExp string, lines string) (string, error) {
 	sourceRegexp, err := regexp.Compile(sourceExp)
 
 	if err != nil {
-		log.Fatalln("Cannot compile the regular expression of the source")
 		return "", err
 	}
 
 	if len(sourceRegexp.FindAllString(lines, 1)) < 1 {
 		return "", errors.New("seems to have not a <source> tag. Skipping his conversion")
-	} //si no hay source no hay nada que hacer, mejor largar
+	}
 
 	return sourceRegexp.FindAllString(lines, 1)[0], nil //we are getting the first match from the array
 }

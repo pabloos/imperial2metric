@@ -29,31 +29,23 @@ func downloadHandler(ctx context.Context, s3Event events.S3Event) {
 	s3 := News3Service(sess)
 
 	for _, record := range s3Event.Records {
-		fmt.Printf(
-			"[%s - %s] Bucket = %s, Key = %s \n",
-			record.EventSource,
-			record.EventTime,
-			record.S3.Bucket.Name,
-			record.S3.Object.Key, //key contains both dir (if any) and the object name
-		)
-
 		imperialfile := s3.DownloadFile(record.S3.Bucket.Name, record.S3.Object.Key)
 
 		if isAZip(record.S3.Object.Key) {
-			// unzipInMem(imperialfile)
-
 			fmt.Println("Detectado archivo zip")
 
-			finalFile := zipProducer(imperialfile)
+			filename := filepath.Base(record.S3.Object.Key)
+
+			finalZip := pkg.ZipProducer(imperialfile, filename)
 
 			err = s3.UploadFile(
 				record.S3.Bucket.Name,
-				fmt.Sprintf("%s/%s", outputDir, filepath.Base(record.S3.Object.Key)),
-				finalFile,
+				fmt.Sprintf("%s/%s", outputDir, filename),
+				finalZip,
 			)
 
 			if err != nil {
-				fmt.Printf("Cannot upload the file: %s", err)
+				fmt.Printf("Cannot upload the file: %s", err.Error())
 			}
 
 			return
@@ -61,7 +53,7 @@ func downloadHandler(ctx context.Context, s3Event events.S3Event) {
 
 		metricfile, err := pkg.TransformFile(imperialfile)
 		if err != nil {
-			fmt.Printf("Error transforming the file: %v", err)
+			fmt.Printf("Error transforming the file: %v", err.Error())
 		}
 
 		err = s3.UploadFile(
@@ -71,7 +63,7 @@ func downloadHandler(ctx context.Context, s3Event events.S3Event) {
 		)
 
 		if err != nil {
-			fmt.Printf("Cannot upload the file: %s", err)
+			fmt.Printf("Cannot upload the file: %s", err.Error())
 		}
 	}
 }

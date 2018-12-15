@@ -1,23 +1,24 @@
-package main
+package pkg
 
 import (
 	"archive/zip"
 	"bytes"
 	"fmt"
-	"imperial2metric/pkg"
 	"io"
 	"io/ioutil"
 	"log"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
+//FileMem represents basic file (name + content/reader)
 type FileMem struct {
 	Name string
 	Body io.Reader
 }
 
-func unzipProducer(reader io.Reader) <-chan FileMem { // 1st producer
+func unzipProducer(reader io.Reader, filename string) <-chan FileMem { // 1st producer
 	c := make(chan FileMem)
 
 	body, err := ioutil.ReadAll(reader)
@@ -34,9 +35,7 @@ func unzipProducer(reader io.Reader) <-chan FileMem { // 1st producer
 
 	go func() {
 		for _, file := range zipReader.File {
-			fmt.Printf("Descomprimiendo zip: %s\n", file.Name)
-
-			if file.Name == "es-ES/" {
+			if file.Name == fmt.Sprintf("%s/", strings.TrimSuffix(filename, filepath.Ext(filename))) {
 				fmt.Println("encontrado el directorio")
 				continue
 			}
@@ -47,7 +46,7 @@ func unzipProducer(reader io.Reader) <-chan FileMem { // 1st producer
 				continue
 			}
 
-			defer unzippedFileBytes.Close()
+			// defer unzippedFileBytes.Close() // read after close error
 
 			c <- FileMem{filepath.Base(file.Name), unzippedFileBytes}
 		}
@@ -57,16 +56,14 @@ func unzipProducer(reader io.Reader) <-chan FileMem { // 1st producer
 	return c
 }
 
-func transformerProducer(elorigen io.Reader) <-chan FileMem { // 2nd producer
+func transformerProducer(elorigen io.Reader, filename string) <-chan FileMem { // 2nd producer
 	c := make(chan FileMem)
 
 	go func() {
-		for file := range unzipProducer(elorigen) {
-			fmt.Printf("Transformando %s\n", file.Name)
-
+		for file := range unzipProducer(elorigen, filename) {
 			readcloser := ioutil.NopCloser(file.Body) // https://stackoverflow.com/questions/52076747/how-do-i-turn-an-io-reader-into-a-io-readcloser
 
-			result, err := pkg.TransformFile(readcloser)
+			result, err := TransformFile(readcloser)
 
 			if err != nil {
 				fmt.Println(fmt.Sprintf("This file %s %v", file.Name, err))
@@ -83,7 +80,7 @@ func transformerProducer(elorigen io.Reader) <-chan FileMem { // 2nd producer
 	return c
 }
 
-func zipProducer(elorigen io.Reader) io.Reader { // consumer
+func ZipProducer(elorigen io.Reader, filename string) io.Reader { // consumer
 	buf := new(bytes.Buffer)
 	w := zip.NewWriter(buf) // Create a new zip archive.
 
@@ -92,9 +89,7 @@ func zipProducer(elorigen io.Reader) io.Reader { // consumer
 	wg.Add(1)
 
 	go func() {
-		for file := range transformerProducer(elorigen) {
-			fmt.Printf("Almacenando zip %s\n", file.Name)
-
+		for file := range transformerProducer(elorigen, filename) {
 			f, err := w.Create(file.Name)
 			if err != nil {
 				log.Fatal(err)

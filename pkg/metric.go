@@ -20,7 +20,6 @@ func imperial2Metric(number float64) float64 {
 	if number == 15.5 { //client's exception case
 		return 39.5
 	}
-
 	return math.Round(number*2.54*10) / 10
 }
 
@@ -40,11 +39,6 @@ func getFloatingPoints(matches []string, numbers []float64) []float64 {
 
 	return numbersWithDecimals
 }
-
-/* func convert2Comma(number float64) string {
-	//it could may be better to use strconv.FormatFloat instead of fmt.Sprintf
-	return strings.Replace(fmt.Sprintf("%.1f", number), ".", ",", 1)
-} */
 
 func convert2Comma(number float64) string { // https://godoc.org/golang.org/x/text/message
 	return message.NewPrinter(language.Spanish).Sprintf("%.1f", number)

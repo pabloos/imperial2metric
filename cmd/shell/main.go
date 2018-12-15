@@ -24,17 +24,6 @@ func main() {
 	}
 
 	for _, file := range files {
-		iofile, err := os.Open(file)
-		if err != nil {
-			log.Fatalf("readLines: %s", err)
-		}
-
-		metricfile, err := i2m.TransformFile(iofile)
-		if err != nil {
-			fmt.Printf("Error transforming the file %s: %v", file, err)
-			continue
-		}
-
 		path := filepath.Dir(file)
 
 		dir := fmt.Sprintf("%s/%s", path, resultsDir)
@@ -42,6 +31,30 @@ func main() {
 		errMkdir := os.Mkdir(dir, 0755)
 		if errMkdir != nil {
 			fmt.Println(errMkdir)
+		}
+
+		iofile, err := os.Open(file)
+		if err != nil {
+			log.Fatalf("readLines: %s", err)
+		}
+
+		if filepath.Ext(iofile.Name()) == ".zip" {
+			result := i2m.ZipProducer(iofile, iofile.Name())
+
+			buff := new(bytes.Buffer)
+			buff.ReadFrom(result)
+
+			bytes := buff.Bytes()
+
+			i2m.WriteOnFile(path, resultsDir, filepath.Base(file), bytes)
+
+			continue
+		}
+
+		metricfile, err := i2m.TransformFile(iofile)
+		if err != nil {
+			fmt.Printf("Error transforming the file %s: %v", file, err)
+			continue
 		}
 
 		buff := new(bytes.Buffer)
